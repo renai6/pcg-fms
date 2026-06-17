@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum TripStatus {
+  ONGOING
+  COMPLETED
+}
+
+model Personnel {
+  id             Int      @id @default(autoincrement())
+  employeeNumber String   @unique
+  firstName      String
+  lastName       String
+  rank           String
+  office         String
+  contactNumber  String
+  isAdmin        Boolean  @default(false)
+  passwordHash   String?
+  createdAt      DateTime @default(now())
+  trips          Trip[]
+}
+
+model Vehicle {
+  id          Int      @id @default(autoincrement())
+  plateNumber String   @unique
+  name        String
+  type        String
+  createdAt   DateTime @default(now())
+  trips       Trip[]
+}
+
+model Trip {
+  id              Int        @id @default(autoincrement())
+  tripNumber      String     @unique
+  vehicleId       Int
+  vehicle         Vehicle    @relation(fields: [vehicleId], references: [id])
+  personnelId     Int
+  personnel       Personnel  @relation(fields: [personnelId], references: [id])
+  startTime       DateTime
+  startOdometer   Float
+  startGasPercent Float
+  endTime         DateTime?
+  endOdometer     Float?
+  endGasPercent   Float?
+  status          TripStatus @default(ONGOING)
+  createdAt       DateTime   @default(now())
+}

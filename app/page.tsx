@@ -16,7 +16,7 @@ export default function HomePage() {
         <Card className="shadow-sm border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Navigation className="h-5 w-5 text-primary" />
+              <Navigation className="h-5 w-5 text-primary" aria-hidden="true" />
               Log a Trip
             </CardTitle>
             <CardDescription>
@@ -33,7 +33,7 @@ export default function HomePage() {
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CircleCheck className="h-5 w-5 text-primary" />
+              <CircleCheck className="h-5 w-5 text-primary" aria-hidden="true" />
               Complete a Trip
             </CardTitle>
             <CardDescription>

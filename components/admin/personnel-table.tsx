@@ -121,7 +121,7 @@ export function PersonnelTable({ personnel }: PersonnelTableProps) {
     router.refresh()
   }
 
-  const PersonnelForm = () => (
+  const personnelFormFields = (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
@@ -235,7 +235,7 @@ export function PersonnelTable({ personnel }: PersonnelTableProps) {
           <DialogHeader>
             <DialogTitle>Add Personnel</DialogTitle>
           </DialogHeader>
-          <PersonnelForm />
+          {personnelFormFields}
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button onClick={handleAdd} disabled={submitting}>
@@ -251,7 +251,7 @@ export function PersonnelTable({ personnel }: PersonnelTableProps) {
           <DialogHeader>
             <DialogTitle>Edit Personnel</DialogTitle>
           </DialogHeader>
-          <PersonnelForm />
+          {personnelFormFields}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditPerson(null)}>Cancel</Button>
             <Button onClick={handleEdit} disabled={submitting}>

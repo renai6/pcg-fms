@@ -102,7 +102,7 @@ export function VehiclesTable({ vehicles }: VehiclesTableProps) {
     router.refresh()
   }
 
-  const VehicleForm = () => (
+  const vehicleFormFields = (
     <div className="space-y-3">
       <div className="space-y-1">
         <Label>Plate Number</Label>
@@ -193,7 +193,7 @@ export function VehiclesTable({ vehicles }: VehiclesTableProps) {
           <DialogHeader>
             <DialogTitle>Add Vehicle</DialogTitle>
           </DialogHeader>
-          <VehicleForm />
+          {vehicleFormFields}
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button onClick={handleAdd} disabled={submitting}>
@@ -209,7 +209,7 @@ export function VehiclesTable({ vehicles }: VehiclesTableProps) {
           <DialogHeader>
             <DialogTitle>Edit Vehicle</DialogTitle>
           </DialogHeader>
-          <VehicleForm />
+          {vehicleFormFields}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditVehicle(null)}>Cancel</Button>
             <Button onClick={handleEdit} disabled={submitting}>

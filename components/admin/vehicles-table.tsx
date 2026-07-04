@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import Link from 'next/link'
+import { PageHeader } from '@/components/admin/page-header'
 
 interface Vehicle {
   id: number
@@ -134,10 +135,9 @@ export function VehiclesTable({ vehicles }: VehiclesTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Vehicles</h1>
+      <PageHeader title="Vehicles" description="Manage the fleet and track vehicle availability.">
         <Button onClick={openAdd}>Add Vehicle</Button>
-      </div>
+      </PageHeader>
 
       <div className="rounded-md border">
         <Table>

@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { PageHeader } from '@/components/admin/page-header'
 
 interface Personnel {
   id: number
@@ -176,10 +177,9 @@ export function PersonnelTable({ personnel }: PersonnelTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Personnel</h1>
+      <PageHeader title="Personnel" description="Manage staff records and system access.">
         <Button onClick={openAdd}>Add Personnel</Button>
-      </div>
+      </PageHeader>
 
       <div className="rounded-md border">
         <Table>

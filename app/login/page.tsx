@@ -37,7 +37,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-background p-4">
+    <main className="min-h-screen flex flex-col items-center justify-center gap-6 bg-muted/30 p-4">
+      <div className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-base font-bold tracking-tight shadow-sm">
+        PCG
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Admin Login</CardTitle>

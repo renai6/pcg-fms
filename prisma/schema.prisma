@@ -24,6 +24,7 @@ model Personnel {
   passwordHash   String?
   createdAt      DateTime @default(now())
   trips          Trip[]
+  roomBookings   RoomBooking[]
 }
 
 model Vehicle {
@@ -50,4 +51,28 @@ model Trip {
   endGasPercent   Float?
   status          TripStatus @default(ONGOING)
   createdAt       DateTime   @default(now())
+}
+
+model Room {
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  floor     String?
+  capacity  Int?
+  createdAt DateTime      @default(now())
+  bookings  RoomBooking[]
+}
+
+model RoomBooking {
+  id          Int       @id @default(autoincrement())
+  roomId      Int
+  room        Room      @relation(fields: [roomId], references: [id])
+  personnelId Int
+  personnel   Personnel @relation(fields: [personnelId], references: [id])
+  office      String
+  purpose     String
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([roomId, startTime])
 }

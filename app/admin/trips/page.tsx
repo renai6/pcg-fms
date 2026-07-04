@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { TripFilters } from '@/components/admin/trip-filters'
+import { PageHeader } from '@/components/admin/page-header'
 
 interface PageProps {
   searchParams: Promise<{ vehicleId?: string; status?: string; date?: string }>
@@ -52,7 +53,7 @@ export default async function TripsPage({ searchParams }: PageProps) {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Trip Log</h1>
+      <PageHeader title="Trip Log" description="Monitor ongoing and completed vehicle trips." />
 
       <Suspense fallback={<div className="h-10 animate-pulse bg-muted rounded-md" />}>
         <TripFilters vehicles={vehicles} />

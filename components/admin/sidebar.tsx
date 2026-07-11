@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -30,9 +31,13 @@ export function Sidebar({ userName }: SidebarProps) {
   return (
     <aside className="w-60 shrink-0 flex flex-col bg-sidebar text-sidebar-foreground min-h-screen">
       <div className="flex items-center gap-3 p-4 border-b border-sidebar-border">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground text-sm font-bold tracking-tight">
-          PCG
-        </div>
+        <Image
+          src="/pcg_logo.webp"
+          alt="Philippine Coast Guard"
+          width={36}
+          height={36}
+          className="size-9 shrink-0"
+        />
         <div className="min-w-0">
           <p className="text-sm font-semibold leading-tight truncate">Facility Management</p>
           <p className="text-xs text-sidebar-foreground/60 truncate">{userName}</p>

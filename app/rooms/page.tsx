@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { prisma } from '@/lib/prisma'
 import { PublicRoomsSchedule } from '@/components/rooms/public-rooms-schedule'
 import { todayString, isValidDate, dayWindow } from '@/lib/rooms'
@@ -45,9 +46,14 @@ export default async function PublicRoomsPage({ searchParams }: PageProps) {
     <main className="min-h-screen bg-muted/30 p-6 md:p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="flex flex-col items-center gap-3 text-center">
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-lg font-bold tracking-tight shadow-sm">
-            PCG
-          </div>
+          <Image
+            src="/pcg_logo.webp"
+            alt="Philippine Coast Guard"
+            width={80}
+            height={80}
+            priority
+            className="size-20"
+          />
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Room Schedule</h1>
             <p className="text-muted-foreground mt-1">

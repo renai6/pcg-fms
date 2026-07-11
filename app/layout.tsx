@@ -18,6 +18,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'PCG Facility Management System',
   description: 'Vehicle trip monitoring and personnel management',
+  icons: {
+    apple: '/pcg_logo.webp',
+  },
 };
 
 export default function RootLayout({

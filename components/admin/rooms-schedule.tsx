@@ -1,18 +1,18 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -20,133 +20,92 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from '@/components/ui/dialog'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+} from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  DAY_START,
+  DAY_END,
+  HOUR_PX,
+  TOTAL_HEIGHT,
+  pad,
+  hoursOfDay,
+  timeValue,
+  formatRange,
+  shiftDate,
+  officeColor,
+  type Room,
+  type Person,
+  type Booking,
+} from "@/lib/rooms";
 
-const DAY_START = 6 // 6:00
-const DAY_END = 20 // 20:00
-const HOUR_PX = 56
-const TOTAL_HEIGHT = (DAY_END - DAY_START) * HOUR_PX
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-type View = 'day' | 'week' | 'month'
-
-interface Room {
-  id: number
-  name: string
-  floor: string | null
-  capacity: number | null
-}
-
-interface Person {
-  id: number
-  firstName: string
-  lastName: string
-  office: string
-}
-
-interface Booking {
-  id: number
-  roomId: number
-  personnelId: number
-  office: string
-  purpose: string
-  startTime: string
-  endTime: string
-  personName: string
-  roomName: string
-}
+type View = "day" | "week" | "month";
 
 interface RoomsScheduleProps {
-  date: string
-  view: View
-  rooms: Room[]
-  bookings: Booking[]
-  personnel: Person[]
+  date: string;
+  view: View;
+  rooms: Room[];
+  bookings: Booking[];
+  personnel: Person[];
 }
 
 interface BookingForm {
-  id: number | null
-  roomId: string
-  personnelId: string
-  purpose: string
-  date: string
-  startTime: string
-  endTime: string
+  id: number | null;
+  roomId: string;
+  personnelId: string;
+  purpose: string;
+  date: string;
+  startTime: string;
+  endTime: string;
 }
 
 // A booking positioned inside a single day column, with overlap lanes resolved.
 interface PositionedBooking {
-  b: Booking
-  top: number
-  height: number
-  lane: number
-  lanes: number
-}
-
-function pad(n: number) {
-  return String(n).padStart(2, '0')
-}
-
-// Fractional hours since midnight, in local time.
-function hoursOfDay(iso: string) {
-  const d = new Date(iso)
-  return d.getHours() + d.getMinutes() / 60
-}
-
-function timeValue(iso: string) {
-  const d = new Date(iso)
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-function formatRange(startIso: string, endIso: string) {
-  const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' }
-  return `${new Date(startIso).toLocaleTimeString([], opts)} – ${new Date(
-    endIso
-  ).toLocaleTimeString([], opts)}`
+  b: Booking;
+  top: number;
+  height: number;
+  lane: number;
+  lanes: number;
 }
 
 function toDateStr(d: Date) {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function parseDate(dateStr: string) {
-  return new Date(`${dateStr}T00:00:00`)
+  return new Date(`${dateStr}T00:00:00`);
 }
 
 function dayOf(iso: string) {
-  return toDateStr(new Date(iso))
-}
-
-function shiftDate(dateStr: string, days: number) {
-  const d = parseDate(dateStr)
-  d.setDate(d.getDate() + days)
-  return toDateStr(d)
+  return toDateStr(new Date(iso));
 }
 
 function addMonths(dateStr: string, n: number) {
-  const d = parseDate(dateStr)
-  const targetDay = d.getDate()
-  d.setDate(1)
-  d.setMonth(d.getMonth() + n)
-  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
-  d.setDate(Math.min(targetDay, lastDay))
-  return toDateStr(d)
+  const d = parseDate(dateStr);
+  const targetDay = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + n);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(targetDay, lastDay));
+  return toDateStr(d);
 }
 
 // The seven date strings of the Sunday-based week containing `dateStr`.
 function weekDates(dateStr: string) {
-  const start = parseDate(dateStr)
-  start.setDate(start.getDate() - start.getDay())
-  return Array.from({ length: 7 }, (_, i) => shiftDate(toDateStr(start), i))
+  const start = parseDate(dateStr);
+  start.setDate(start.getDate() - start.getDay());
+  return Array.from({ length: 7 }, (_, i) => shiftDate(toDateStr(start), i));
 }
 
 // The 42 date strings (6 weeks) of the month grid containing `dateStr`.
 function monthGridDates(dateStr: string) {
-  const d = parseDate(dateStr)
-  const gridStart = new Date(d.getFullYear(), d.getMonth(), 1)
-  gridStart.setDate(gridStart.getDate() - gridStart.getDay())
-  return Array.from({ length: 42 }, (_, i) => shiftDate(toDateStr(gridStart), i))
+  const d = parseDate(dateStr);
+  const gridStart = new Date(d.getFullYear(), d.getMonth(), 1);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+  return Array.from({ length: 42 }, (_, i) =>
+    shiftDate(toDateStr(gridStart), i),
+  );
 }
 
 // Pack a day's bookings into non-overlapping lanes so concurrent bookings
@@ -159,27 +118,27 @@ function layoutDay(dayBookings: Booking[]): PositionedBooking[] {
       end: Math.min(hoursOfDay(b.endTime), DAY_END),
     }))
     .filter((x) => x.end > x.start)
-    .sort((a, b) => a.start - b.start || a.end - b.end)
+    .sort((a, b) => a.start - b.start || a.end - b.end);
 
-  const result: PositionedBooking[] = []
-  let cluster: typeof items = []
-  let clusterEnd = -Infinity
+  const result: PositionedBooking[] = [];
+  let cluster: typeof items = [];
+  let clusterEnd = -Infinity;
 
   const flush = () => {
-    if (cluster.length === 0) return
-    const laneEnds: number[] = []
-    const laneOf = new Map<Booking, number>()
+    if (cluster.length === 0) return;
+    const laneEnds: number[] = [];
+    const laneOf = new Map<Booking, number>();
     for (const it of cluster) {
-      let lane = laneEnds.findIndex((end) => end <= it.start)
+      let lane = laneEnds.findIndex((end) => end <= it.start);
       if (lane === -1) {
-        lane = laneEnds.length
-        laneEnds.push(it.end)
+        lane = laneEnds.length;
+        laneEnds.push(it.end);
       } else {
-        laneEnds[lane] = it.end
+        laneEnds[lane] = it.end;
       }
-      laneOf.set(it.b, lane)
+      laneOf.set(it.b, lane);
     }
-    const lanes = laneEnds.length
+    const lanes = laneEnds.length;
     for (const it of cluster) {
       result.push({
         b: it.b,
@@ -187,91 +146,71 @@ function layoutDay(dayBookings: Booking[]): PositionedBooking[] {
         height: Math.max((it.end - it.start) * HOUR_PX, 22),
         lane: laneOf.get(it.b) ?? 0,
         lanes,
-      })
+      });
     }
-    cluster = []
-    clusterEnd = -Infinity
-  }
+    cluster = [];
+    clusterEnd = -Infinity;
+  };
 
   for (const it of items) {
-    if (cluster.length > 0 && it.start >= clusterEnd) flush()
-    cluster.push(it)
-    clusterEnd = Math.max(clusterEnd, it.end)
+    if (cluster.length > 0 && it.start >= clusterEnd) flush();
+    cluster.push(it);
+    clusterEnd = Math.max(clusterEnd, it.end);
   }
-  flush()
-  return result
+  flush();
+  return result;
 }
 
-// Curated, theme-harmonious palette (warm + muted neutrals) assigned
-// deterministically per office label so bookings stay legible and on-brand.
-const OFFICE_PALETTE = [
-  { hue: 40, sat: 65 }, // amber (brand-adjacent)
-  { hue: 25, sat: 55 }, // terracotta
-  { hue: 200, sat: 35 }, // slate blue
-  { hue: 150, sat: 30 }, // muted teal
-  { hue: 265, sat: 30 }, // muted violet
-  { hue: 340, sat: 35 }, // dusty rose
-  { hue: 90, sat: 30 }, // olive
-  { hue: 15, sat: 20 }, // warm grey
-]
+export function RoomsSchedule({
+  date,
+  view,
+  rooms,
+  bookings,
+  personnel,
+}: RoomsScheduleProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState<BookingForm | null>(null);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-function officeColor(office: string) {
-  let hash = 0
-  for (let i = 0; i < office.length; i++) {
-    hash = (hash * 31 + office.charCodeAt(i)) & 0xffffffff
-  }
-  const { hue, sat } = OFFICE_PALETTE[Math.abs(hash) % OFFICE_PALETTE.length]
-  return {
-    background: `hsl(${hue} ${sat}% 95%)`,
-    borderColor: `hsl(${hue} ${sat}% 52%)`,
-    color: `hsl(${hue} ${Math.min(sat + 10, 60)}% 26%)`,
-  }
-}
+  const hours: number[] = [];
+  for (let h = DAY_START; h <= DAY_END; h++) hours.push(h);
 
-export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsScheduleProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [form, setForm] = useState<BookingForm | null>(null)
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-
-  const hours: number[] = []
-  for (let h = DAY_START; h <= DAY_END; h++) hours.push(h)
-
-  const todayStr = toDateStr(new Date())
+  const todayStr = toDateStr(new Date());
 
   function goTo(nextDate: string, nextView: View = view) {
-    const params = new URLSearchParams()
-    params.set('date', nextDate)
-    if (nextView !== 'day') params.set('view', nextView)
-    router.push(`${pathname}?${params.toString()}`)
+    const params = new URLSearchParams();
+    params.set("date", nextDate);
+    if (nextView !== "day") params.set("view", nextView);
+    router.push(`${pathname}?${params.toString()}`);
   }
 
   function navigate(dir: -1 | 1) {
-    if (view === 'day') goTo(shiftDate(date, dir))
-    else if (view === 'week') goTo(shiftDate(date, dir * 7))
-    else goTo(addMonths(date, dir))
+    if (view === "day") goTo(shiftDate(date, dir));
+    else if (view === "week") goTo(shiftDate(date, dir * 7));
+    else goTo(addMonths(date, dir));
   }
 
   function openNew(roomId: number, dayStr: string, startHour: number) {
-    const start = Math.max(DAY_START, Math.min(startHour, DAY_END - 1))
-    setError('')
+    const start = Math.max(DAY_START, Math.min(startHour, DAY_END - 1));
+    setError("");
     setForm({
       id: null,
       roomId: String(roomId),
-      personnelId: personnel[0] ? String(personnel[0].id) : '',
-      purpose: '',
+      personnelId: personnel[0] ? String(personnel[0].id) : "",
+      purpose: "",
       date: dayStr,
       startTime: `${pad(start)}:00`,
       endTime: `${pad(start + 1)}:00`,
-    })
-    setDialogOpen(true)
+    });
+    setDialogOpen(true);
   }
 
   function openEdit(b: Booking) {
-    setError('')
+    setError("");
     setForm({
       id: b.id,
       roomId: String(b.roomId),
@@ -280,86 +219,96 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
       date: dayOf(b.startTime),
       startTime: timeValue(b.startTime),
       endTime: timeValue(b.endTime),
-    })
-    setDialogOpen(true)
+    });
+    setDialogOpen(true);
   }
 
   function handleColumnClick(
     e: React.MouseEvent<HTMLDivElement>,
     roomId: number,
-    dayStr: string
+    dayStr: string,
   ) {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const y = e.clientY - rect.top
-    const hour = DAY_START + Math.floor(y / HOUR_PX)
-    openNew(roomId, dayStr, hour)
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const hour = DAY_START + Math.floor(y / HOUR_PX);
+    openNew(roomId, dayStr, hour);
   }
 
   async function handleSubmit() {
-    if (!form) return
-    setError('')
-    setSubmitting(true)
+    if (!form) return;
+    setError("");
+    setSubmitting(true);
     const payload = {
       roomId: Number(form.roomId),
       personnelId: Number(form.personnelId),
       purpose: form.purpose,
       startTime: new Date(`${form.date}T${form.startTime}`).toISOString(),
       endTime: new Date(`${form.date}T${form.endTime}`).toISOString(),
-    }
+    };
     const res = await fetch(
-      form.id ? `/api/room-bookings/${form.id}` : '/api/room-bookings',
+      form.id ? `/api/room-bookings/${form.id}` : "/api/room-bookings",
       {
-        method: form.id ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: form.id ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      }
-    )
-    const data = await res.json()
-    setSubmitting(false)
+      },
+    );
+    const data = await res.json();
+    setSubmitting(false);
     if (!res.ok) {
-      setError(data.error ?? 'Failed to save booking')
-      return
+      setError(data.error ?? "Failed to save booking");
+      return;
     }
-    setDialogOpen(false)
-    router.refresh()
+    setDialogOpen(false);
+    router.refresh();
   }
 
   async function handleDelete() {
-    if (!form?.id) return
-    setDeleting(true)
-    const res = await fetch(`/api/room-bookings/${form.id}`, { method: 'DELETE' })
-    const data = await res.json()
-    setDeleting(false)
+    if (!form?.id) return;
+    setDeleting(true);
+    const res = await fetch(`/api/room-bookings/${form.id}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    setDeleting(false);
     if (!res.ok) {
-      setError(data.error ?? 'Failed to delete booking')
-      return
+      setError(data.error ?? "Failed to delete booking");
+      return;
     }
-    setDialogOpen(false)
-    router.refresh()
+    setDialogOpen(false);
+    router.refresh();
   }
 
-  let title: string
-  if (view === 'day') {
+  let title: string;
+  if (view === "day") {
     title = parseDate(date).toLocaleDateString([], {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  } else if (view === 'week') {
-    const wd = weekDates(date)
-    const first = parseDate(wd[0]).toLocaleDateString([], { month: 'short', day: 'numeric' })
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } else if (view === "week") {
+    const wd = weekDates(date);
+    const first = parseDate(wd[0]).toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+    });
     const last = parseDate(wd[6]).toLocaleDateString([], {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
-    title = `${first} – ${last}`
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    title = `${first} – ${last}`;
   } else {
-    title = parseDate(date).toLocaleDateString([], { month: 'long', year: 'numeric' })
+    title = parseDate(date).toLocaleDateString([], {
+      month: "long",
+      year: "numeric",
+    });
   }
 
-  const selectedPerson = personnel.find((p) => String(p.id) === form?.personnelId)
+  const selectedPerson = personnel.find(
+    (p) => String(p.id) === form?.personnelId,
+  );
 
   return (
     <div className="space-y-4">
@@ -387,11 +336,11 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
         {/* View switcher */}
         <div className="ml-auto flex items-center gap-2">
           <div className="flex rounded-lg border p-0.5">
-            {(['day', 'week', 'month'] as View[]).map((v) => (
+            {(["day", "week", "month"] as View[]).map((v) => (
               <Button
                 key={v}
                 size="sm"
-                variant={view === v ? 'default' : 'ghost'}
+                variant={view === v ? "default" : "ghost"}
                 className="capitalize"
                 onClick={() => goTo(date, v)}
               >
@@ -399,7 +348,10 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
               </Button>
             ))}
           </div>
-          <Button onClick={() => rooms[0] && openNew(rooms[0].id, date, 9)} disabled={rooms.length === 0}>
+          <Button
+            onClick={() => rooms[0] && openNew(rooms[0].id, date, 9)}
+            disabled={rooms.length === 0}
+          >
             New Booking
           </Button>
         </div>
@@ -407,9 +359,10 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
 
       {rooms.length === 0 ? (
         <div className="rounded-md border p-10 text-center text-muted-foreground">
-          No rooms yet. Use <strong>Manage Rooms</strong> above to add a room before scheduling.
+          No rooms yet. Use <strong>Manage Rooms</strong> above to add a room
+          before scheduling.
         </div>
-      ) : view === 'day' ? (
+      ) : view === "day" ? (
         /* ---------- DAY VIEW: rooms as columns ---------- */
         <div className="rounded-md border overflow-x-auto">
           <div className="flex">
@@ -431,13 +384,20 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
 
             {/* Room columns */}
             {rooms.map((room) => {
-              const roomBookings = bookings.filter((b) => b.roomId === room.id)
+              const roomBookings = bookings.filter((b) => b.roomId === room.id);
               return (
-                <div key={room.id} className="flex-1 min-w-52 border-r last:border-r-0">
+                <div
+                  key={room.id}
+                  className="flex-1 min-w-52 border-r last:border-r-0"
+                >
                   <div className="h-10 border-b px-2 flex flex-col justify-center">
-                    <span className="text-sm font-medium truncate">{room.name}</span>
+                    <span className="text-sm font-medium truncate">
+                      {room.name}
+                    </span>
                     {room.floor && (
-                      <span className="text-xs text-muted-foreground truncate">{room.floor}</span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {room.floor}
+                      </span>
                     )}
                   </div>
                   <div
@@ -450,24 +410,30 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                       <div
                         key={h}
                         className="absolute inset-x-0 border-b border-border/60"
-                        style={{ top: (h - DAY_START) * HOUR_PX, height: HOUR_PX }}
+                        style={{
+                          top: (h - DAY_START) * HOUR_PX,
+                          height: HOUR_PX,
+                        }}
                       />
                     ))}
 
                     {/* Booking blocks */}
                     {roomBookings.map((b) => {
-                      const start = Math.max(hoursOfDay(b.startTime), DAY_START)
-                      const end = Math.min(hoursOfDay(b.endTime), DAY_END)
-                      const top = (start - DAY_START) * HOUR_PX
-                      const height = Math.max((end - start) * HOUR_PX, 22)
-                      const colors = officeColor(b.office)
+                      const start = Math.max(
+                        hoursOfDay(b.startTime),
+                        DAY_START,
+                      );
+                      const end = Math.min(hoursOfDay(b.endTime), DAY_END);
+                      const top = (start - DAY_START) * HOUR_PX;
+                      const height = Math.max((end - start) * HOUR_PX, 22);
+                      const colors = officeColor(b.office);
                       return (
                         <button
                           key={b.id}
                           type="button"
                           onClick={(e) => {
-                            e.stopPropagation()
-                            openEdit(b)
+                            e.stopPropagation();
+                            openEdit(b);
                           }}
                           className="absolute inset-x-1 rounded-md border-l-4 px-2 py-1 text-left overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                           style={{ top, height, ...colors }}
@@ -475,7 +441,9 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                           <div className="text-xs font-semibold leading-tight truncate">
                             {b.office}
                           </div>
-                          <div className="text-[11px] leading-tight truncate">{b.personName}</div>
+                          <div className="text-[11px] leading-tight truncate">
+                            {b.personName}
+                          </div>
                           {height > 44 && (
                             <div className="text-[11px] leading-tight truncate opacity-80">
                               {b.purpose}
@@ -487,15 +455,15 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                             </div>
                           )}
                         </button>
-                      )
+                      );
                     })}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
-      ) : view === 'week' ? (
+      ) : view === "week" ? (
         /* ---------- WEEK VIEW: days as columns ---------- */
         <div className="rounded-md border overflow-x-auto">
           <div className="flex">
@@ -517,21 +485,33 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
 
             {/* Day columns */}
             {weekDates(date).map((dayStr) => {
-              const d = parseDate(dayStr)
-              const isToday = dayStr === todayStr
-              const positioned = layoutDay(bookings.filter((b) => dayOf(b.startTime) === dayStr))
+              const d = parseDate(dayStr);
+              const isToday = dayStr === todayStr;
+              const positioned = layoutDay(
+                bookings.filter((b) => dayOf(b.startTime) === dayStr),
+              );
               return (
-                <div key={dayStr} className="flex-1 min-w-32 border-r last:border-r-0">
+                <div
+                  key={dayStr}
+                  className="flex-1 min-w-32 border-r last:border-r-0"
+                >
                   <button
                     type="button"
-                    onClick={() => goTo(dayStr, 'day')}
+                    onClick={() => goTo(dayStr, "day")}
                     className={cn(
-                      'h-12 w-full border-b px-2 flex flex-col justify-center hover:bg-muted transition-colors',
-                      isToday && 'bg-primary/10'
+                      "h-12 w-full border-b px-2 flex flex-col justify-center hover:bg-muted transition-colors",
+                      isToday && "bg-primary/10",
                     )}
                   >
-                    <span className="text-xs text-muted-foreground">{WEEKDAYS[d.getDay()]}</span>
-                    <span className={cn('text-sm font-medium', isToday && 'text-primary')}>
+                    <span className="text-xs text-muted-foreground">
+                      {WEEKDAYS[d.getDay()]}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-sm font-medium",
+                        isToday && "text-primary",
+                      )}
+                    >
                       {d.getDate()}
                     </span>
                   </button>
@@ -545,21 +525,24 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                       <div
                         key={h}
                         className="absolute inset-x-0 border-b border-border/60"
-                        style={{ top: (h - DAY_START) * HOUR_PX, height: HOUR_PX }}
+                        style={{
+                          top: (h - DAY_START) * HOUR_PX,
+                          height: HOUR_PX,
+                        }}
                       />
                     ))}
 
                     {/* Booking blocks */}
                     {positioned.map((p) => {
-                      const colors = officeColor(p.b.office)
-                      const widthPct = 100 / p.lanes
+                      const colors = officeColor(p.b.office);
+                      const widthPct = 100 / p.lanes;
                       return (
                         <button
                           key={p.b.id}
                           type="button"
                           onClick={(e) => {
-                            e.stopPropagation()
-                            openEdit(p.b)
+                            e.stopPropagation();
+                            openEdit(p.b);
                           }}
                           className="absolute rounded-md border-l-4 px-1.5 py-0.5 text-left overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                           style={{
@@ -573,18 +556,20 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                           <div className="text-[11px] font-semibold leading-tight truncate">
                             {p.b.roomName}
                           </div>
-                          <div className="text-[10px] leading-tight truncate">{p.b.office}</div>
+                          <div className="text-[10px] leading-tight truncate">
+                            {p.b.office}
+                          </div>
                           {p.height > 42 && (
                             <div className="text-[10px] leading-tight truncate opacity-80">
                               {p.b.personName}
                             </div>
                           )}
                         </button>
-                      )
+                      );
                     })}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
@@ -593,66 +578,76 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
         <div className="rounded-md border overflow-hidden">
           <div className="grid grid-cols-7 border-b bg-muted/30">
             {WEEKDAYS.map((w) => (
-              <div key={w} className="px-2 py-1.5 text-xs font-medium text-muted-foreground text-center">
+              <div
+                key={w}
+                className="px-2 py-1.5 text-xs font-medium text-muted-foreground text-center"
+              >
                 {w}
               </div>
             ))}
           </div>
           <div className="grid grid-cols-7">
             {monthGridDates(date).map((dayStr) => {
-              const d = parseDate(dayStr)
-              const inMonth = d.getMonth() === parseDate(date).getMonth()
-              const isToday = dayStr === todayStr
-              const dayBookings = bookings.filter((b) => dayOf(b.startTime) === dayStr)
-              const shown = dayBookings.slice(0, 3)
-              const extra = dayBookings.length - shown.length
+              const d = parseDate(dayStr);
+              const inMonth = d.getMonth() === parseDate(date).getMonth();
+              const isToday = dayStr === todayStr;
+              const dayBookings = bookings.filter(
+                (b) => dayOf(b.startTime) === dayStr,
+              );
+              const shown = dayBookings.slice(0, 3);
+              const extra = dayBookings.length - shown.length;
               return (
                 <div
                   key={dayStr}
-                  onClick={() => goTo(dayStr, 'day')}
+                  onClick={() => goTo(dayStr, "day")}
                   className={cn(
-                    'min-h-24 border-b border-r p-1 flex flex-col gap-0.5 cursor-pointer transition-colors hover:bg-muted/40 [&:nth-child(7n)]:border-r-0',
-                    !inMonth && 'bg-muted/20'
+                    "min-h-24 border-b border-r p-1 flex flex-col gap-0.5 cursor-pointer transition-colors hover:bg-muted/40 [&:nth-child(7n)]:border-r-0",
+                    !inMonth && "bg-muted/20",
                   )}
                 >
                   <div className="flex justify-end">
                     <span
                       className={cn(
-                        'text-xs w-5 h-5 flex items-center justify-center rounded-full',
-                        isToday && 'bg-primary text-primary-foreground font-medium',
-                        !inMonth && !isToday && 'text-muted-foreground'
+                        "text-xs w-5 h-5 flex items-center justify-center rounded-full",
+                        isToday &&
+                          "bg-primary text-primary-foreground font-medium",
+                        !inMonth && !isToday && "text-muted-foreground",
                       )}
                     >
                       {d.getDate()}
                     </span>
                   </div>
                   {shown.map((b) => {
-                    const colors = officeColor(b.office)
+                    const colors = officeColor(b.office);
                     return (
                       <button
                         key={b.id}
                         type="button"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          openEdit(b)
+                          e.stopPropagation();
+                          openEdit(b);
                         }}
                         className="rounded border-l-2 px-1 py-0.5 text-left overflow-hidden"
                         style={colors}
                       >
                         <span className="text-[10px] leading-tight truncate block">
                           <span className="font-medium">
-                            {new Date(b.startTime).toLocaleTimeString([], { hour: 'numeric' })}
-                          </span>{' '}
+                            {new Date(b.startTime).toLocaleTimeString([], {
+                              hour: "numeric",
+                            })}
+                          </span>{" "}
                           {b.roomName}
                         </span>
                       </button>
-                    )
+                    );
                   })}
                   {extra > 0 && (
-                    <span className="text-[10px] text-muted-foreground px-1">+{extra} more</span>
+                    <span className="text-[10px] text-muted-foreground px-1">
+                      +{extra} more
+                    </span>
                   )}
                 </div>
-              )
+              );
             })}
           </div>
         </div>
@@ -662,9 +657,12 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{form?.id ? 'Edit Booking' : 'New Booking'}</DialogTitle>
+            <DialogTitle>
+              {form?.id ? "Edit Booking" : "New Booking"}
+            </DialogTitle>
             <DialogDescription>
-              Reserve a room for a person. Their office is recorded on the booking.
+              Reserve a room for a person. Their office is recorded on the
+              booking.
             </DialogDescription>
           </DialogHeader>
 
@@ -683,7 +681,7 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                     {rooms.map((r) => (
                       <SelectItem key={r.id} value={String(r.id)}>
                         {r.name}
-                        {r.floor ? ` — ${r.floor}` : ''}
+                        {r.floor ? ` — ${r.floor}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -709,8 +707,8 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                 </Select>
                 {selectedPerson && (
                   <p className="text-xs text-muted-foreground">
-                    Office <strong>{selectedPerson.office}</strong> will be recorded for this
-                    booking.
+                    Office <strong>{selectedPerson.office}</strong> will be
+                    recorded for this booking.
                   </p>
                 )}
               </div>
@@ -720,7 +718,9 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                 <Input
                   placeholder="e.g. Team meeting"
                   value={form.purpose}
-                  onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, purpose: e.target.value })
+                  }
                 />
               </div>
 
@@ -738,7 +738,9 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                   <Input
                     type="time"
                     value={form.startTime}
-                    onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, startTime: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -746,7 +748,9 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                   <Input
                     type="time"
                     value={form.endTime}
-                    onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, endTime: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -758,8 +762,12 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
           <DialogFooter className="sm:justify-between">
             <div>
               {form?.id && (
-                <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? 'Deleting...' : 'Delete'}
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting..." : "Delete"}
                 </Button>
               )}
             </div>
@@ -768,12 +776,16 @@ export function RoomsSchedule({ date, view, rooms, bookings, personnel }: RoomsS
                 Cancel
               </Button>
               <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Saving...' : form?.id ? 'Save Changes' : 'Create Booking'}
+                {submitting
+                  ? "Saving..."
+                  : form?.id
+                    ? "Save Changes"
+                    : "Create Booking"}
               </Button>
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

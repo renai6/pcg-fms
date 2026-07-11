@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession } from '@/lib/auth'
 
+// Public: unauthenticated visitors can create room bookings (mirrors public
+// trip logging). Editing/deleting bookings stays admin-gated in [id]/route.ts.
 export async function POST(request: NextRequest) {
-  const session = await getSession(request)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   const body = await request.json()
   const { roomId, personnelId, purpose, startTime, endTime } = body as {
     roomId: number | string

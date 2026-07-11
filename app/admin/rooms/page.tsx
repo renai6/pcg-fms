@@ -2,19 +2,12 @@ import { prisma } from '@/lib/prisma'
 import { RoomsSchedule } from '@/components/admin/rooms-schedule'
 import { ManageRoomsDialog } from '@/components/admin/manage-rooms-dialog'
 import { PageHeader } from '@/components/admin/page-header'
+import { todayString, isValidDate } from '@/lib/rooms'
 
 type View = 'day' | 'week' | 'month'
 
 interface PageProps {
   searchParams: Promise<{ date?: string; view?: string }>
-}
-
-function todayString() {
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = String(now.getMonth() + 1).padStart(2, '0')
-  const d = String(now.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
 }
 
 // Sunday-based start of the week for the given date.
@@ -50,7 +43,7 @@ function rangeForView(view: View, focus: Date) {
 
 export default async function RoomsPage({ searchParams }: PageProps) {
   const { date: dateParam, view: viewParam } = await searchParams
-  const date = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayString()
+  const date = isValidDate(dateParam) ? dateParam : todayString()
   const view: View = viewParam === 'week' || viewParam === 'month' ? viewParam : 'day'
 
   const { start: rangeStart, end: rangeEnd } = rangeForView(view, new Date(`${date}T00:00:00`))

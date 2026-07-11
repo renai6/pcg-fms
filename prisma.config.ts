@@ -9,6 +9,8 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Migrations must run over a direct connection (Supabase 5432), not the
+    // PgBouncer transaction pooler (6543) which errors on prepared statements.
+    url: process.env["DIRECT_URL"],
   },
 });

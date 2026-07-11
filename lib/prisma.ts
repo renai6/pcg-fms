@@ -1,22 +1,16 @@
 import dotenv from "dotenv";
 
 import { PrismaClient } from "@/generated/prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 dotenv.config();
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 function createPrismaClient() {
-  const adapter = new PrismaMariaDb({
-    host: process.env.DATABASE_HOST,
-    port: Number(process.env.DATABASE_PORT),
-    user: process.env.DATABASE_USER,
-    password: process.env.DATABASE_PASSWORD,
-    database: process.env.DATABASE_NAME,
-    connectionLimit: 5,
-    allowPublicKeyRetrieval: true,
-  });
+  // Runtime connects through the Supabase transaction pooler (DATABASE_URL,
+  // port 6543). Migrations use the direct connection via prisma.config.ts.
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 
   return new PrismaClient({ adapter });
 }

@@ -1,14 +1,13 @@
+import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { RoomsSchedule } from '@/components/admin/rooms-schedule'
-import { ManageRoomsDialog } from '@/components/admin/manage-rooms-dialog'
-import { PageHeader } from '@/components/admin/page-header'
+import { PublicRoomsSchedule } from '@/components/rooms/public-rooms-schedule'
 import { todayString, isValidDate, dayWindow } from '@/lib/rooms'
 
 interface PageProps {
   searchParams: Promise<{ date?: string }>
 }
 
-export default async function RoomsPage({ searchParams }: PageProps) {
+export default async function PublicRoomsPage({ searchParams }: PageProps) {
   const { date: dateParam } = await searchParams
   const date = isValidDate(dateParam) ? dateParam : todayString()
 
@@ -43,20 +42,33 @@ export default async function RoomsPage({ searchParams }: PageProps) {
   }))
 
   return (
-    <div className="p-6 space-y-4">
-      <PageHeader
-        title="Room Schedule"
-        description="See who is using which room, and reserve rooms by date and time."
-      >
-        <ManageRoomsDialog rooms={rooms} />
-      </PageHeader>
+    <main className="min-h-screen bg-muted/30 p-6 md:p-8">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <header className="flex flex-col items-center gap-3 text-center">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground text-lg font-bold tracking-tight shadow-sm">
+            PCG
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Room Schedule</h1>
+            <p className="text-muted-foreground mt-1">
+              See who is using which room, and reserve a room by date and time.
+            </p>
+          </div>
+          <Link
+            href="/"
+            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          >
+            ← Back to home
+          </Link>
+        </header>
 
-      <RoomsSchedule
-        date={date}
-        rooms={rooms}
-        bookings={bookingData}
-        personnel={personnel}
-      />
-    </div>
+        <PublicRoomsSchedule
+          date={date}
+          rooms={rooms}
+          bookings={bookingData}
+          personnel={personnel}
+        />
+      </div>
+    </main>
   )
 }

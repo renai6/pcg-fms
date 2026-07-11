@@ -28,16 +28,16 @@ import {
   TOTAL_HEIGHT,
   pad,
   hoursOfDay,
-  timeValue,
   formatRange,
   shiftDate,
   officeColor,
+  todayString,
   type Room,
   type Person,
   type Booking,
 } from '@/lib/rooms'
 
-interface RoomsScheduleProps {
+interface PublicRoomsScheduleProps {
   date: string
   rooms: Room[]
   bookings: Booking[]
@@ -45,7 +45,6 @@ interface RoomsScheduleProps {
 }
 
 interface BookingForm {
-  id: number | null
   roomId: string
   personnelId: string
   purpose: string
@@ -54,14 +53,18 @@ interface BookingForm {
   endTime: string
 }
 
-export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsScheduleProps) {
+export function PublicRoomsSchedule({
+  date,
+  rooms,
+  bookings,
+  personnel,
+}: PublicRoomsScheduleProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState<BookingForm | null>(null)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [deleting, setDeleting] = useState(false)
 
   const hours: number[] = []
   for (let h = DAY_START; h <= DAY_END; h++) hours.push(h)
@@ -74,27 +77,12 @@ export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsSchedul
     const start = Math.max(DAY_START, Math.min(startHour, DAY_END - 1))
     setError('')
     setForm({
-      id: null,
       roomId: String(roomId),
       personnelId: personnel[0] ? String(personnel[0].id) : '',
       purpose: '',
       date,
       startTime: `${pad(start)}:00`,
       endTime: `${pad(start + 1)}:00`,
-    })
-    setDialogOpen(true)
-  }
-
-  function openEdit(b: Booking) {
-    setError('')
-    setForm({
-      id: b.id,
-      roomId: String(b.roomId),
-      personnelId: String(b.personnelId),
-      purpose: b.purpose,
-      date,
-      startTime: timeValue(b.startTime),
-      endTime: timeValue(b.endTime),
     })
     setDialogOpen(true)
   }
@@ -117,32 +105,15 @@ export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsSchedul
       startTime: new Date(`${form.date}T${form.startTime}`).toISOString(),
       endTime: new Date(`${form.date}T${form.endTime}`).toISOString(),
     }
-    const res = await fetch(
-      form.id ? `/api/room-bookings/${form.id}` : '/api/room-bookings',
-      {
-        method: form.id ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }
-    )
+    const res = await fetch('/api/room-bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
     const data = await res.json()
     setSubmitting(false)
     if (!res.ok) {
       setError(data.error ?? 'Failed to save booking')
-      return
-    }
-    setDialogOpen(false)
-    router.refresh()
-  }
-
-  async function handleDelete() {
-    if (!form?.id) return
-    setDeleting(true)
-    const res = await fetch(`/api/room-bookings/${form.id}`, { method: 'DELETE' })
-    const data = await res.json()
-    setDeleting(false)
-    if (!res.ok) {
-      setError(data.error ?? 'Failed to delete booking')
       return
     }
     setDialogOpen(false)
@@ -176,7 +147,7 @@ export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsSchedul
           value={date}
           onChange={(e) => e.target.value && goToDate(e.target.value)}
         />
-        <Button variant="outline" onClick={() => goToDate(shiftDate(new Date().toISOString().slice(0, 10), 0))}>
+        <Button variant="outline" onClick={() => goToDate(todayString())}>
           Today
         </Button>
         <span className="text-sm text-muted-foreground">{prettyDate}</span>
@@ -192,7 +163,7 @@ export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsSchedul
 
       {rooms.length === 0 ? (
         <div className="rounded-md border p-10 text-center text-muted-foreground">
-          No rooms yet. Use <strong>Manage Rooms</strong> above to add a room before scheduling.
+          No rooms are available yet.
         </div>
       ) : (
         <div className="rounded-md border overflow-x-auto">
@@ -238,7 +209,7 @@ export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsSchedul
                       />
                     ))}
 
-                    {/* Booking blocks */}
+                    {/* Booking blocks (display-only) */}
                     {roomBookings.map((b) => {
                       const start = Math.max(hoursOfDay(b.startTime), DAY_START)
                       const end = Math.min(hoursOfDay(b.endTime), DAY_END)
@@ -246,14 +217,9 @@ export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsSchedul
                       const height = Math.max((end - start) * HOUR_PX, 22)
                       const colors = officeColor(b.office)
                       return (
-                        <button
+                        <div
                           key={b.id}
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openEdit(b)
-                          }}
-                          className="absolute inset-x-1 rounded-md border-l-4 px-2 py-1 text-left overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                          className="absolute inset-x-1 rounded-md border-l-4 px-2 py-1 overflow-hidden shadow-sm"
                           style={{ top, height, ...colors }}
                         >
                           <div className="text-xs font-semibold leading-tight truncate">
@@ -270,7 +236,7 @@ export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsSchedul
                               {formatRange(b.startTime, b.endTime)}
                             </div>
                           )}
-                        </button>
+                        </div>
                       )
                     })}
                   </div>
@@ -285,7 +251,7 @@ export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsSchedul
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{form?.id ? 'Edit Booking' : 'New Booking'}</DialogTitle>
+            <DialogTitle>New Booking</DialogTitle>
             <DialogDescription>
               Reserve a room for a person. Their office is recorded on the booking.
             </DialogDescription>
@@ -378,22 +344,13 @@ export function RoomsSchedule({ date, rooms, bookings, personnel }: RoomsSchedul
             </div>
           )}
 
-          <DialogFooter className="sm:justify-between">
-            <div>
-              {form?.id && (
-                <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? 'Deleting...' : 'Delete'}
-                </Button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Saving...' : form?.id ? 'Save Changes' : 'Create Booking'}
-              </Button>
-            </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={submitting}>
+              {submitting ? 'Saving...' : 'Create Booking'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -13,7 +13,7 @@ export default function HomePage() {
         <p className="text-muted-foreground mt-2">Vehicle Trip Monitoring System</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
         <Card>
           <CardHeader>
             <CardTitle>Log a Trip</CardTitle>
@@ -38,6 +38,20 @@ export default function HomePage() {
           <CardContent>
             <Button asChild variant="outline" className="w-full">
               <Link href="/trip/complete">Complete Trip</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Book a Room</CardTitle>
+            <CardDescription>
+              Reserve a room and see the day&apos;s schedule of who is using which room.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/rooms">Room Schedule</Link>
             </Button>
           </CardContent>
         </Card>

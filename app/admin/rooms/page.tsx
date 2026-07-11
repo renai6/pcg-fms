@@ -2,22 +2,56 @@ import { prisma } from '@/lib/prisma'
 import { RoomsSchedule } from '@/components/admin/rooms-schedule'
 import { ManageRoomsDialog } from '@/components/admin/manage-rooms-dialog'
 import { PageHeader } from '@/components/admin/page-header'
-import { todayString, isValidDate, dayWindow } from '@/lib/rooms'
+import { todayString, isValidDate } from '@/lib/rooms'
+
+type View = 'day' | 'week' | 'month'
 
 interface PageProps {
-  searchParams: Promise<{ date?: string }>
+  searchParams: Promise<{ date?: string; view?: string }>
+}
+
+// Sunday-based start of the week for the given date.
+function startOfWeek(d: Date) {
+  const x = new Date(d)
+  x.setDate(x.getDate() - x.getDay())
+  x.setHours(0, 0, 0, 0)
+  return x
+}
+
+// The half-open [start, end) range of days to load for a given view.
+function rangeForView(view: View, focus: Date) {
+  const start = new Date(focus)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(start)
+
+  if (view === 'day') {
+    end.setDate(end.getDate() + 1)
+    return { start, end }
+  }
+  if (view === 'week') {
+    const weekStart = startOfWeek(focus)
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekEnd.getDate() + 7)
+    return { start: weekStart, end: weekEnd }
+  }
+  // month: cover the full 6-week grid that the calendar renders.
+  const gridStart = startOfWeek(new Date(focus.getFullYear(), focus.getMonth(), 1))
+  const gridEnd = new Date(gridStart)
+  gridEnd.setDate(gridEnd.getDate() + 42)
+  return { start: gridStart, end: gridEnd }
 }
 
 export default async function RoomsPage({ searchParams }: PageProps) {
-  const { date: dateParam } = await searchParams
+  const { date: dateParam, view: viewParam } = await searchParams
   const date = isValidDate(dateParam) ? dateParam : todayString()
+  const view: View = viewParam === 'week' || viewParam === 'month' ? viewParam : 'day'
 
-  const { dayStart, nextDay } = dayWindow(date)
+  const { start: rangeStart, end: rangeEnd } = rangeForView(view, new Date(`${date}T00:00:00`))
 
   const [rooms, bookings, personnel] = await Promise.all([
     prisma.room.findMany({ orderBy: { name: 'asc' } }),
     prisma.roomBooking.findMany({
-      where: { startTime: { gte: dayStart, lt: nextDay } },
+      where: { startTime: { gte: rangeStart, lt: rangeEnd } },
       include: {
         room: { select: { name: true } },
         personnel: { select: { firstName: true, lastName: true } },
@@ -53,6 +87,7 @@ export default async function RoomsPage({ searchParams }: PageProps) {
 
       <RoomsSchedule
         date={date}
+        view={view}
         rooms={rooms}
         bookings={bookingData}
         personnel={personnel}
